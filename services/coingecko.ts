@@ -100,6 +100,7 @@ export const useGlobalData = () => {
     queryFn: () => getGlobalData(),
     staleTime: 100000,
     refetchInterval: 100000,
+    refetchOnWindowFocus: false,
   });
 };
 

@@ -11,8 +11,11 @@ import {
   CellContext,
   ColumnDef,
   Header,
+  SortingState,
+  Table,
   flexRender,
   getCoreRowModel,
+  getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 import {
@@ -87,12 +90,31 @@ const DraggableTableHeader = ({
           meta.align === "left" ? "" : "justify-end"
         } gap-1`}
       >
-        {header.isPlaceholder
-          ? null
-          : flexRender(header.column.columnDef.header, header.getContext())}
+        <div
+          className={
+            header.column.getCanSort()
+              ? "flex items-center cursor-pointer select-none"
+              : ""
+          }
+          onClick={header.column.getToggleSortingHandler()}
+        >
+          <span className="text-lg">
+            {{
+              asc: "▴ ",
+              desc: "▾ ",
+            }[header.column.getIsSorted() as string] ?? null}
+          </span>
+          {header.isPlaceholder
+            ? null
+            : flexRender(header.column.columnDef.header, header.getContext())}
+        </div>
         {meta.draggable && (
           <button {...attributes} {...listeners}>
-            🟰
+            <div className="flex flex-col gap-0.5">
+              <div className="w-3 h-0.5 bg-neutral-500"></div>
+              <div className="w-3 h-0.5 bg-neutral-500"></div>
+              <div className="w-3 h-0.5 bg-neutral-500"></div>
+            </div>
           </button>
         )}
       </div>
@@ -139,6 +161,7 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
   const [tabs, setTabs] = useState<MarketDataOrderBy>("market_cap_desc");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(100);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   const {
     data: marketTableData,
@@ -179,10 +202,11 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
         header: () => <span>Coin Name</span>,
         id: "name",
         meta: {
-          sortable: true,
           draggable: true,
           align: "left",
         },
+        sortDescFirst: false,
+        sortingFn: "alphanumeric",
       },
       {
         accessorKey: "current_price",
@@ -193,7 +217,6 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
         header: () => <div className="text-right">Price</div>,
         id: "price",
         meta: {
-          sortable: true,
           draggable: true,
           align: "right",
         },
@@ -212,7 +235,6 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
             />
           ),
         meta: {
-          sortable: true,
           draggable: true,
           align: "right",
         },
@@ -232,7 +254,6 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
             />
           ),
         meta: {
-          sortable: true,
           draggable: true,
           align: "right",
         },
@@ -252,7 +273,6 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
             />
           ),
         meta: {
-          sortable: true,
           draggable: true,
           align: "right",
         },
@@ -267,7 +287,6 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
             ? "-"
             : formatCurrency(info.getValue() as string, "auto", "$"),
         meta: {
-          sortable: true,
           draggable: true,
           align: "right",
         },
@@ -277,8 +296,8 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
         header: () => "Last 7 days",
         id: "7d-chart",
         size: 135,
+        enableSorting: false,
         meta: {
-          sortable: false,
           draggable: false,
           align: "right",
         },
@@ -294,11 +313,16 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
     data: marketTableData ?? fallbackData,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     state: {
       columnOrder,
+      sorting,
       columnVisibility: {},
     },
+    sortDescFirst: true,
+    enableMultiSort: false,
     onColumnOrderChange: setColumnOrder,
+    onSortingChange: setSorting,
   });
 
   // reorder columns after drag & drop
