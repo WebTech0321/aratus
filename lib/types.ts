@@ -81,3 +81,7 @@ export interface CoinGeckoTrendingCoin {
 export interface CoinGeckoTrendingData {
   coins: CoinGeckoTrendingCoin[];
 }
+
+export interface SavedStatus {
+  [name: string]: string[];
+}

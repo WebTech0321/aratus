@@ -1,4 +1,11 @@
-import { CSSProperties, memo, useCallback, useMemo, useState } from "react";
+import {
+  CSSProperties,
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   MarketDataOrderBy,
   useGlobalData,
@@ -37,12 +44,10 @@ import {
 import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
 
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faMagicWandSparkles } from "@fortawesome/free-solid-svg-icons";
-import { CoinGeckoMarketData } from "@/lib/types";
+import { CoinGeckoMarketData, SavedStatus } from "@/lib/types";
 import TrendValue from "./TrendValue";
 import SparklineChart from "./SparklineChart";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, loadFromLocalStorage } from "@/lib/utils";
 import {
   Select,
   SelectValue,
@@ -51,6 +56,8 @@ import {
   SelectItem,
 } from "./ui/select";
 import Pagination from "./Pagination";
+import CustomizeButton from "./CustomizeButton";
+import { SAVED_VIEWS_KEY } from "@/lib/constants";
 
 const fallbackData: CoinGeckoMarketData[] = [];
 
@@ -172,12 +179,14 @@ const CoinNameCell = memo(
 );
 
 const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
-  const [activeTab, setActiveTab] =
-    useState<MarketDataOrderBy>("market_cap_desc");
-  const [tabs, setTabs] = useState<MarketDataOrderBy>("market_cap_desc");
+  const [activeTab, setActiveTab] = useState<string>("Default");
+  const [savedViews, setSavedViews] = useState<SavedStatus>({});
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(100);
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<{
+    [key: string]: boolean;
+  }>({});
 
   const {
     data: marketTableData,
@@ -230,7 +239,7 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
       {
         accessorKey: "name",
         cell: renderCoinName,
-        header: () => <span>Coin Name</span>,
+        header: "Coin Name",
         id: "name",
         meta: {
           draggable: true,
@@ -242,7 +251,7 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
       {
         accessorKey: "current_price",
         cell: renderPrice,
-        header: () => <div className="text-right">Price</div>,
+        header: "Price",
         id: "price",
         meta: {
           draggable: true,
@@ -251,7 +260,7 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
       },
       {
         accessorKey: "price_change_percentage_1h_in_currency",
-        header: () => <span>1h</span>,
+        header: "1h",
         id: "1h",
         cell: renderTrendValue,
         meta: {
@@ -262,7 +271,7 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
       },
       {
         accessorKey: "price_change_percentage_24h_in_currency",
-        header: () => <span>24h</span>,
+        header: "24h",
         id: "24h",
         cell: renderTrendValue,
         meta: {
@@ -273,7 +282,7 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
       },
       {
         accessorKey: "price_change_percentage_7d_in_currency",
-        header: () => <span>7d</span>,
+        header: "7d",
         id: "7d",
         cell: renderTrendValue,
         meta: {
@@ -284,7 +293,7 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
       },
       {
         accessorKey: "market_cap",
-        header: () => <span>Market Cap</span>,
+        header: "Market Cap",
         id: "market_cap",
         cell: renderPrice,
         meta: {
@@ -294,7 +303,7 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
       },
       {
         cell: renderChart,
-        header: () => "Last 7 days",
+        header: "Last 7 days",
         id: "7d-chart",
         size: 135,
         enableSorting: false,
@@ -319,7 +328,7 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
     state: {
       columnOrder,
       sorting,
-      columnVisibility: {},
+      columnVisibility: columnVisibility,
     },
     sortDescFirst: true,
     enableMultiSort: false,
@@ -345,19 +354,50 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
     useSensor(KeyboardSensor, {})
   );
 
+  const handleUpdateTab = (newState: SavedStatus, name: string) => {
+    setActiveTab(name);
+    setSavedViews(newState);
+  };
+
+  useEffect(() => {
+    const savedViews = loadFromLocalStorage<SavedStatus>(SAVED_VIEWS_KEY, {});
+    setSavedViews(savedViews);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "Default") {
+      setColumnOrder(columns.map((c) => c.id!));
+      setColumnVisibility({});
+    } else {
+      setColumnOrder(savedViews[activeTab] || columns.map((c) => c.id!));
+      const visibility: { [key: string]: boolean } = {};
+      columns.forEach((column) => {
+        if (column.id)
+          visibility[column.id] = savedViews[activeTab].includes(column.id);
+      });
+      setColumnVisibility(visibility);
+    }
+  }, [activeTab, savedViews, columns]);
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <Tabs defaultValue="market_cap_desc">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
-            <TabsTrigger value="account">Account</TabsTrigger>
-            <TabsTrigger value="password">Password</TabsTrigger>
+            <TabsTrigger value="Default">Default</TabsTrigger>
+            {Object.keys(savedViews).map((key) => (
+              <TabsTrigger key={key} value={key}>
+                {key}
+              </TabsTrigger>
+            ))}
           </TabsList>
         </Tabs>
-        <Button variant="secondary">
-          <FontAwesomeIcon icon={faMagicWandSparkles} />
-          Customize
-        </Button>
+        <CustomizeButton
+          activeTab={activeTab === "Default" ? "" : activeTab}
+          columns={columns}
+          order={columnOrder}
+          onUpdate={handleUpdateTab}
+        />
       </div>
       <DndContext
         collisionDetection={closestCenter}

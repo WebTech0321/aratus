@@ -34,3 +34,25 @@ export const formatCurrency = (
   parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   return (currency || "") + parts.join(".");
 };
+
+export const saveToLocalStorage = <T>(key: string, data: T): void => {
+  try {
+    const serializedData = JSON.stringify(data);
+    localStorage.setItem(key, serializedData);
+  } catch (error) {
+    console.error("Error saving to localStorage:", error);
+  }
+};
+
+export const loadFromLocalStorage = <T>(key: string, defaultValue: T): T => {
+  try {
+    const serializedData = localStorage.getItem(key);
+    if (serializedData === null) {
+      return defaultValue;
+    }
+    return JSON.parse(serializedData) as T;
+  } catch (error) {
+    console.error("Error loading from localStorage:", error);
+    return defaultValue;
+  }
+};
