@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCaretDown, faCaretUp } from "@fortawesome/free-solid-svg-icons";
 
@@ -12,4 +13,4 @@ const TrendValue = ({ value, text }: { value: number; text: string }) => (
   </div>
 );
 
-export default TrendValue;
+export default memo(TrendValue);

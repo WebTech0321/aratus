@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import dynamic from "next/dynamic";
 
 const ResponsiveLineCanvas = dynamic(
@@ -47,4 +47,4 @@ const SparklineChart = ({ data }: { data: number[] }) => {
   );
 };
 
-export default SparklineChart;
+export default memo(SparklineChart);

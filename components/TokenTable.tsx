@@ -48,9 +48,7 @@ import {
   SelectValue,
   SelectTrigger,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
 } from "./ui/select";
 import Pagination from "./Pagination";
 
@@ -155,6 +153,24 @@ const DragAlongCell = ({
   );
 };
 
+const CoinNameCell = memo(
+  ({
+    name,
+    image,
+    symbol,
+  }: {
+    name: string;
+    image: string;
+    symbol: string;
+  }) => (
+    <div className="flex items-center">
+      <img src={image} alt={name} className="w-6 h-6 me-2" />
+      <div className="font-semibold me-1">{name}</div>
+      <div className="text-xs text-neutral-500">{symbol.toUpperCase()}</div>
+    </div>
+  )
+);
+
 const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
   const [activeTab, setActiveTab] =
     useState<MarketDataOrderBy>("market_cap_desc");
@@ -173,15 +189,7 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
     (info: CellContext<CoinGeckoMarketData, unknown>) => {
       const data = info.row.original;
 
-      return (
-        <div className="flex items-center">
-          <img src={data.image} alt={data.name} className="w-6 h-6 me-2" />
-          <div className="font-semibold me-1">{data.name}</div>
-          <div className="text-xs text-neutral-500">
-            {data.symbol.toUpperCase()}
-          </div>
-        </div>
-      );
+      return <CoinNameCell {...data} />;
     },
     []
   );
@@ -190,6 +198,29 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
     (info: CellContext<CoinGeckoMarketData, unknown>) => {
       const data = info.row.original;
       return <SparklineChart data={data.sparkline_in_7d.price} />;
+    },
+    []
+  );
+
+  const renderPrice = useCallback(
+    (info: CellContext<CoinGeckoMarketData, unknown>) => {
+      return info.getValue() === null
+        ? "-"
+        : formatCurrency(info.getValue() as string, "auto", "$");
+    },
+    []
+  );
+
+  const renderTrendValue = useCallback(
+    (info: CellContext<CoinGeckoMarketData, unknown>) => {
+      return info.getValue() === null ? (
+        "-"
+      ) : (
+        <TrendValue
+          value={info.getValue() as number}
+          text={`${(info.getValue() as number).toFixed(1)}%`}
+        />
+      );
     },
     []
   );
@@ -210,10 +241,7 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
       },
       {
         accessorKey: "current_price",
-        cell: (info) =>
-          info.getValue() === null
-            ? "-"
-            : formatCurrency(info.getValue() as string, "auto", "$"),
+        cell: renderPrice,
         header: () => <div className="text-right">Price</div>,
         id: "price",
         meta: {
@@ -225,15 +253,7 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
         accessorKey: "price_change_percentage_1h_in_currency",
         header: () => <span>1h</span>,
         id: "1h",
-        cell: (info) =>
-          info.getValue() === null ? (
-            "-"
-          ) : (
-            <TrendValue
-              value={info.getValue() as number}
-              text={`${(info.getValue() as number).toFixed(1)}%`}
-            />
-          ),
+        cell: renderTrendValue,
         meta: {
           draggable: true,
           align: "right",
@@ -244,15 +264,7 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
         accessorKey: "price_change_percentage_24h_in_currency",
         header: () => <span>24h</span>,
         id: "24h",
-        cell: (info) =>
-          info.getValue() === null ? (
-            "-"
-          ) : (
-            <TrendValue
-              value={info.getValue() as number}
-              text={`${(info.getValue() as number).toFixed(1)}%`}
-            />
-          ),
+        cell: renderTrendValue,
         meta: {
           draggable: true,
           align: "right",
@@ -263,15 +275,7 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
         accessorKey: "price_change_percentage_7d_in_currency",
         header: () => <span>7d</span>,
         id: "7d",
-        cell: (info) =>
-          info.getValue() === null ? (
-            "-"
-          ) : (
-            <TrendValue
-              value={info.getValue() as number}
-              text={`${(info.getValue() as number).toFixed(1)}%`}
-            />
-          ),
+        cell: renderTrendValue,
         meta: {
           draggable: true,
           align: "right",
@@ -282,10 +286,7 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
         accessorKey: "market_cap",
         header: () => <span>Market Cap</span>,
         id: "market_cap",
-        cell: (info) =>
-          info.getValue() === null
-            ? "-"
-            : formatCurrency(info.getValue() as string, "auto", "$"),
+        cell: renderPrice,
         meta: {
           draggable: true,
           align: "right",
@@ -305,6 +306,7 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
     ],
     []
   );
+
   const [columnOrder, setColumnOrder] = useState<string[]>(() =>
     columns.map((c) => c.id!)
   );
@@ -388,15 +390,14 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
             )}
             {table.getRowModel().rows.map((row) => (
               <tr key={row.id} className="hover:bg-neutral-50">
-                {row.getVisibleCells().map((cell) => (
-                  <SortableContext
-                    key={cell.id}
-                    items={columnOrder}
-                    strategy={horizontalListSortingStrategy}
-                  >
+                <SortableContext
+                  items={columnOrder}
+                  strategy={horizontalListSortingStrategy}
+                >
+                  {row.getVisibleCells().map((cell) => (
                     <DragAlongCell key={cell.id} cell={cell} />
-                  </SortableContext>
-                ))}
+                  ))}
+                </SortableContext>
               </tr>
             ))}
           </tbody>
