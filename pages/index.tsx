@@ -20,7 +20,7 @@ const geistMono = localFont({
 
 export default function Home() {
   const [showHighLights, setShowHighLights] = useState(true);
-  const { data: globalData, isLoading } = useGlobalData();
+  const { data: globalData } = useGlobalData();
 
   return (
     <div

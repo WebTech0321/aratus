@@ -2,7 +2,6 @@ import { Card } from "./ui/card";
 import { useLargestMarketCap } from "@/services/coingecko";
 import { Skeleton } from "./ui/skeleton";
 import { formatCurrency } from "@/lib/utils";
-import { useMemo } from "react";
 import TrendValue from "./TrendValue";
 
 const LargestGainerCard = () => {

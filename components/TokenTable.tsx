@@ -6,20 +6,14 @@ import {
   useMemo,
   useState,
 } from "react";
-import {
-  MarketDataOrderBy,
-  useGlobalData,
-  useMarketData,
-} from "@/services/coingecko";
+import { useMarketData } from "@/services/coingecko";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
-import { Button } from "./ui/button";
 import {
   Cell,
   CellContext,
   ColumnDef,
   Header,
   SortingState,
-  Table,
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
@@ -177,6 +171,7 @@ const CoinNameCell = memo(
     </div>
   )
 );
+CoinNameCell.displayName = "CoinNameCell";
 
 const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
   const [activeTab, setActiveTab] = useState<string>("Default");
@@ -188,11 +183,8 @@ const TokenTable = ({ totalTokenCount }: { totalTokenCount: number }) => {
     [key: string]: boolean;
   }>({});
 
-  const {
-    data: marketTableData,
-    isLoading: isTableDataLoading,
-    error: tableDataError,
-  } = useMarketData(page, rowsPerPage);
+  const { data: marketTableData, isLoading: isTableDataLoading } =
+    useMarketData(page, rowsPerPage);
 
   const renderCoinName = useCallback(
     (info: CellContext<CoinGeckoMarketData, unknown>) => {
